@@ -760,7 +760,7 @@ export default function PortailCaptif() {
           className="whats-contact"
         >
           <span className="whats-icon">💬</span>
-          Besoin d'aide ? Contactez le <span className="whats-number">0100372900</span>
+          Assistance ? Contactez le <span className="whats-number">0100372900</span>
         </a>
       </div>
 
