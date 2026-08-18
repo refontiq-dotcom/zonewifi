@@ -42,7 +42,7 @@ export interface ForfaitConfig {
   prix: number;
   waveUrl: string;
   emoji: string;
-  popular?: boolean;
+  accent: string; // Couleur fun associée au forfait (bouton Payer + prix)
 }
 
 export const FORFAITS: ForfaitConfig[] = [
@@ -54,6 +54,7 @@ export const FORFAITS: ForfaitConfig[] = [
     prix: 500,
     waveUrl: process.env.NEXT_PUBLIC_WAVE_URL_3J ?? '#',
     emoji: '⚡',
+    accent: '#F59E0B',
   },
   {
     profil: 'pass_1s',
@@ -63,7 +64,7 @@ export const FORFAITS: ForfaitConfig[] = [
     prix: 1000,
     waveUrl: process.env.NEXT_PUBLIC_WAVE_URL_1S ?? '#',
     emoji: '📅',
-    popular: true,
+    accent: '#2563EB',
   },
   {
     profil: 'pass_2s',
@@ -73,6 +74,7 @@ export const FORFAITS: ForfaitConfig[] = [
     prix: 1500,
     waveUrl: process.env.NEXT_PUBLIC_WAVE_URL_2S ?? '#',
     emoji: '🚀',
+    accent: '#EC4899',
   },
   {
     profil: 'pass_1m',
@@ -82,5 +84,6 @@ export const FORFAITS: ForfaitConfig[] = [
     prix: 3000,
     waveUrl: process.env.NEXT_PUBLIC_WAVE_URL_1M ?? '#',
     emoji: '👑',
+    accent: '#10B981',
   },
 ];

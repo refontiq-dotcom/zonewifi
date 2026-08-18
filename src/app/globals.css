@@ -1,47 +1,54 @@
 /* ============================================================
    ZoneWifi — Design System (CSS Vanilla)
-   Palette: Bleu nuit + Cyan électrique + Gold accent
+   Thème "Fun & Vibrant" : rose / ambre / bleu / vert sur fond clair
    ============================================================ */
 
-/* --- Google Fonts --- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+/* --- Google Fonts : Fredoka (titres) + Nunito (texte) --- */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&display=swap');
 
 /* --- Variables --- */
 :root {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Nunito', system-ui, -apple-system, sans-serif;
+  --font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
 
-  /* Couleurs primaires */
-  --color-bg:           #03060f;
-  --color-bg-card:      #080e1e;
-  --color-bg-card-2:    #0d1628;
-  --color-border:       rgba(99, 179, 237, 0.12);
-  --color-border-hover: rgba(99, 179, 237, 0.3);
+  /* Rose principal */
+  --color-primary:      #E11D48;
+  --color-primary-dim:  #FFF1F2;
+  --color-primary-glow: rgba(225, 29, 72, 0.35);
 
-  /* Cyan électrique */
-  --color-primary:      #00d4ff;
-  --color-primary-dim:  rgba(0, 212, 255, 0.15);
-  --color-primary-glow: rgba(0, 212, 255, 0.4);
-
-  /* Gold accent */
-  --color-gold:         #f6c90e;
-  --color-gold-dim:     rgba(246, 201, 14, 0.15);
+  /* Accents fun */
+  --color-accent:       #2563EB;
+  --color-accent-dim:   #EFF6FF;
+  --color-gold:         #F59E0B;
+  --color-gold-dim:     #FFF7E6;
+  --color-pink:         #EC4899;
 
   /* Success / Error */
-  --color-success:      #00e48a;
-  --color-success-dim:  rgba(0, 228, 138, 0.15);
-  --color-error:        #ff4f6a;
-  --color-error-dim:    rgba(255, 79, 106, 0.12);
+  --color-success:      #10B981;
+  --color-success-dim:  #E7F8F1;
+  --color-error:        #DC2626;
+  --color-error-dim:    #FEE2E2;
+
+  /* Surfaces */
+  --color-bg:           #FFF4F6;
+  --color-bg-card:      #FFFFFF;
+  --color-bg-card-2:    #FFFFFF;
+  --color-border:       #FECDD3;
+  --color-border-hover: #FB7185;
 
   /* Texte */
-  --color-text:         #e8f0fe;
-  --color-text-muted:   #7a8bb0;
-  --color-text-dim:     #4a5a7a;
+  --color-text:         #4C0519;
+  --color-text-muted:   #64748B;
+  --color-text-dim:     #94A3B8;
 
-  /* Spacing */
-  --radius-sm:   8px;
+  /* Spacing / Formes */
+  --radius-sm:   10px;
   --radius-md:   14px;
   --radius-lg:   20px;
-  --radius-xl:   28px;
+  --radius-xl:   26px;
+
+  --shadow-card: 0 20px 60px rgba(225, 29, 72, 0.10),
+                 0 4px 16px rgba(37, 99, 235, 0.06);
 
   /* Transitions */
   --transition:  all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -60,7 +67,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-bg);
+  background: linear-gradient(135deg, #FFF4F6 0%, #F6EFFF 45%, #EFF6FF 100%);
   color: var(--color-text);
   min-height: 100vh;
   line-height: 1.6;
@@ -68,15 +75,16 @@ body {
   overflow-x: hidden;
 }
 
-/* --- Fond animé avec particules --- */
+/* --- Fond animé avec bulles colorées fun --- */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(0, 212, 255, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% 110%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0, 212, 255, 0.03) 0%, transparent 70%);
+    radial-gradient(ellipse 55% 45% at 12% 4%, rgba(236, 72, 153, 0.20) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 45% at 92% 12%, rgba(245, 158, 11, 0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 78% 100%, rgba(37, 99, 235, 0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 45% 45% at 4% 92%, rgba(16, 185, 129, 0.14) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -97,7 +105,7 @@ body::before {
 /* --- Header --- */
 .header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 36px;
   padding-top: 16px;
 }
 
@@ -109,22 +117,23 @@ body::before {
 }
 
 .header-logo-icon {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, var(--color-primary), #6366f1);
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(135deg, #E11D48, #F59E0B, #2563EB);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  box-shadow: 0 0 24px var(--color-primary-glow);
+  font-size: 23px;
+  box-shadow: 0 8px 26px rgba(225, 29, 72, 0.35);
 }
 
 .header-logo-text {
-  font-size: 26px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #fff 30%, var(--color-primary));
+  background: linear-gradient(90deg, #E11D48, #F59E0B, #2563EB);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -132,35 +141,94 @@ body::before {
 
 .header-subtitle {
   color: var(--color-text-muted);
-  font-size: 15px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* --- Conteneur principal --- */
 .main-card {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   max-width: 460px;
   background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-xl);
-  padding: 32px 28px;
-  backdrop-filter: blur(20px);
-  box-shadow:
-    0 0 0 1px rgba(0, 212, 255, 0.04),
-    0 4px 6px rgba(0, 0, 0, 0.3),
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: 30px 26px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Barre arc-en-ciel fun en haut de la carte */
+.main-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #E11D48, #F59E0B, #10B981, #2563EB, #EC4899);
 }
 
 /* ============================================================
-   Champ téléphone
+   Onglets de parcours
+   ============================================================ */
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  background: var(--color-primary-dim);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 5px;
+  margin-bottom: 26px;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 9px 6px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: var(--transition);
+  line-height: 1.2;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab.active {
+  background: linear-gradient(135deg, #E11D48, #F59E0B);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.30);
+}
+
+.tab-icon {
+  font-size: 17px;
+}
+
+.tab-panel {
+  animation: pop-in 0.25s ease;
+}
+
+/* ============================================================
+   Champs de saisie (téléphone / code)
    ============================================================ */
 .section-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: var(--color-text-dim);
+  color: var(--color-primary);
   margin-bottom: 8px;
 }
 
@@ -175,7 +243,7 @@ body::before {
   top: 50%;
   transform: translateY(-50%);
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 15px;
   pointer-events: none;
   display: flex;
@@ -193,14 +261,14 @@ body::before {
 
 .phone-input {
   width: 100%;
-  padding: 14px 14px 14px 80px;
-  background: var(--color-bg-card-2);
+  padding: 14px 14px 14px 84px;
+  background: #FFFFFF;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text);
   font-size: 17px;
   font-family: var(--font-sans);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 1px;
   outline: none;
   transition: var(--transition);
@@ -214,62 +282,17 @@ body::before {
 
 .phone-input:focus {
   border-color: var(--color-primary);
-  background: rgba(0, 212, 255, 0.04);
-  box-shadow: 0 0 0 3px var(--color-primary-dim);
+  background: var(--color-primary-dim);
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.12);
 }
 
-/* ============================================================
-   Onglets de parcours
-   ============================================================ */
-.tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  background: var(--color-bg-card-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 6px;
-  margin-bottom: 26px;
+.field-error {
+  color: var(--color-error);
+  font-size: 12px;
+  margin-top: 6px;
+  padding-left: 4px;
 }
 
-.tab {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 11px 10px;
-  background: transparent;
-  border: none;
-  border-radius: 10px;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.tab:hover {
-  color: var(--color-text);
-}
-
-.tab.active {
-  background: linear-gradient(135deg, var(--color-primary), #6366f1);
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
-}
-
-.tab-icon {
-  font-size: 16px;
-}
-
-.tab-panel {
-  animation: pop-in 0.25s ease;
-}
-
-/* ============================================================
-   Champ code Wi-Fi
-   ============================================================ */
 .code-input-wrapper {
   position: relative;
   margin-bottom: 14px;
@@ -287,7 +310,7 @@ body::before {
 .code-input {
   width: 100%;
   padding: 14px 14px 14px 44px;
-  background: var(--color-bg-card-2);
+  background: #FFFFFF;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text);
@@ -308,89 +331,8 @@ body::before {
 
 .code-input:focus {
   border-color: var(--color-primary);
-  background: rgba(0, 212, 255, 0.04);
-  box-shadow: 0 0 0 3px var(--color-primary-dim);
-}
-
-/* --- Bouton "Se connecter" --- */
-.btn-connect {
-  width: 100%;
-  padding: 15px;
-  background: linear-gradient(135deg, var(--color-success), #00c9a7);
-  border: none;
-  border-radius: var(--radius-md);
-  color: #00331f;
-  font-size: 15px;
-  font-weight: 800;
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: var(--transition);
-  box-shadow: 0 4px 20px rgba(0, 228, 138, 0.25);
-  letter-spacing: 0.2px;
-}
-
-.btn-connect:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 228, 138, 0.35);
-}
-
-.btn-connect:active {
-  transform: translateY(0);
-}
-
-.btn-connect:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* --- Statut de vérification du code --- */
-.verify-status {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  line-height: 1.6;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  text-align: center;
-}
-
-.verify-status.is-info {
   background: var(--color-primary-dim);
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  color: var(--color-primary);
-}
-
-.verify-status.is-ok {
-  background: var(--color-success-dim);
-  border: 1px solid var(--color-success);
-  color: var(--color-success);
-}
-
-.verify-status.is-error {
-  background: var(--color-error-dim);
-  border: 1px solid var(--color-error);
-  color: var(--color-error);
-}
-
-.verify-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(0, 212, 255, 0.25);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.tab-hint {
-  margin-top: 18px;
-  font-size: 12px;
-  color: var(--color-text-dim);
-  text-align: center;
-  line-height: 1.6;
+  box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.12);
 }
 
 /* ============================================================
@@ -410,12 +352,12 @@ body::before {
   grid-template-columns: auto 1fr auto;
   grid-template-areas:
     'emoji info price'
-    'emoji action action';
+    'cta cta cta';
   align-items: center;
-  gap: 4px 12px;
+  gap: 6px 12px;
   text-align: left;
   padding: 14px 16px;
-  background: var(--color-bg-card-2);
+  background: #FFFFFF;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   color: inherit;
@@ -425,26 +367,37 @@ body::before {
   overflow: hidden;
 }
 
+/* Barre de couleur fun à gauche de chaque forfait */
+.pay-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: var(--pay-accent);
+}
+
 .pay-btn:hover:not(:disabled) {
-  border-color: var(--color-border-hover);
+  border-color: var(--pay-accent);
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+  box-shadow: 0 8px 26px rgba(225, 29, 72, 0.10);
 }
 
 .pay-btn.selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary-dim);
-  box-shadow: 0 0 0 1px var(--color-primary);
+  border-color: var(--pay-accent);
+  background: #FFF7F8;
+  box-shadow: 0 0 0 2px var(--pay-accent);
 }
 
 .pay-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .pay-emoji {
   grid-area: emoji;
-  font-size: 24px;
+  font-size: 26px;
 }
 
 .pay-info {
@@ -454,80 +407,72 @@ body::before {
 }
 
 .pay-name {
-  font-weight: 700;
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
   color: var(--color-text);
-}
-
-.pay-tag-popular {
-  display: inline-block;
-  margin-top: 2px;
-  align-self: flex-start;
-  background: linear-gradient(135deg, var(--color-gold), #f59e0b);
-  color: #0a0500;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  padding: 1px 6px;
-  border-radius: 20px;
-  text-transform: uppercase;
 }
 
 .pay-duration {
   font-size: 12px;
   color: var(--color-text-muted);
-  margin-top: 1px;
 }
 
 .pay-price {
   grid-area: price;
   text-align: right;
   font-size: 18px;
-  font-weight: 800;
-  color: var(--color-primary);
-  letter-spacing: -0.5px;
+  font-weight: 600;
+  color: var(--pay-accent);
+  font-family: var(--font-display);
 }
 
 .pay-currency {
   font-size: 10px;
   color: var(--color-text-muted);
-  font-weight: 600;
+  font-weight: 700;
   display: block;
   text-align: right;
 }
 
-.pay-action {
-  grid-area: action;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-dim);
-  letter-spacing: 0.5px;
+/* Bouton "Payer" — redirige vers le lien Wave du forfait */
+.pay-btn-cta {
+  grid-area: cta;
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 11px 0;
+  border-radius: 10px;
+  background: var(--pay-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   transition: var(--transition);
 }
 
-.pay-btn:hover:not(:disabled) .pay-action,
-.pay-btn.selected .pay-action {
-  color: var(--color-primary);
+.pay-btn:hover:not(:disabled) .pay-btn-cta {
+  filter: brightness(1.08);
 }
 
 /* ============================================================
-   Bouton "J'ai effectué le paiement"
+   Boutons d'action principaux
    ============================================================ */
 .btn-paid {
   display: none;
   width: 100%;
   padding: 15px;
-  background: linear-gradient(135deg, var(--color-primary), #6366f1);
+  background: linear-gradient(135deg, #E11D48, #F59E0B);
   border: none;
   border-radius: var(--radius-md);
   color: #fff;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   font-family: var(--font-sans);
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 6px 22px rgba(225, 29, 72, 0.30);
   margin-top: 8px;
   letter-spacing: 0.2px;
 }
@@ -538,7 +483,7 @@ body::before {
 
 .btn-paid:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 212, 255, 0.45);
+  box-shadow: 0 10px 30px rgba(225, 29, 72, 0.40);
 }
 
 .btn-paid:active {
@@ -549,6 +494,171 @@ body::before {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+.btn-connect {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #10B981, #0EA5E9);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.30);
+  letter-spacing: 0.2px;
+}
+
+.btn-connect:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.40);
+}
+
+.btn-connect:active {
+  transform: translateY(0);
+}
+
+.btn-connect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-lookup {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #2563EB, #7C3AED);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 6px 22px rgba(37, 99, 235, 0.30);
+  letter-spacing: 0.2px;
+}
+
+.btn-lookup:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.40);
+}
+
+.btn-lookup:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================================
+   Statut de vérification du code
+   ============================================================ */
+.verify-status {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  text-align: center;
+}
+
+.verify-status.is-info {
+  background: var(--color-accent-dim);
+  border: 1px solid #93C5FD;
+  color: #1D4ED8;
+}
+
+.verify-status.is-ok {
+  background: var(--color-success-dim);
+  border: 1px solid #34D399;
+  color: #047857;
+}
+
+.verify-status.is-error {
+  background: var(--color-error-dim);
+  border: 1px solid #FCA5A5;
+  color: #B91C1C;
+}
+
+.verify-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(37, 99, 235, 0.25);
+  border-top-color: #2563EB;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.tab-hint {
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   Résultat "Mes codes"
+   ============================================================ */
+.lookup-result {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
+}
+
+.lookup-result.is-found {
+  background: var(--color-success-dim);
+  border: 1.5px solid #34D399;
+}
+
+.lookup-result.is-none {
+  background: var(--color-gold-dim);
+  border: 1.5px solid #FCD34D;
+}
+
+.lookup-result.is-error {
+  background: var(--color-error-dim);
+  border: 1.5px solid #FCA5A5;
+}
+
+.lookup-title {
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.lookup-code-box {
+  background: #fff;
+  border: 2px dashed #10B981;
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+}
+
+.lookup-code {
+  font-family: 'Courier New', monospace;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: #047857;
+}
+
+.lookup-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 /* ============================================================
@@ -580,8 +690,9 @@ body::before {
 }
 
 .status-title {
-  font-size: 17px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
   color: var(--color-text);
   margin-bottom: 8px;
 }
@@ -640,7 +751,7 @@ body::before {
   font-size: 34px;
   margin: 0 auto 20px;
   animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 40px rgba(0, 228, 138, 0.3);
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.30);
 }
 
 @keyframes pop-in {
@@ -649,8 +760,9 @@ body::before {
 }
 
 .success-title {
-  font-size: 20px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
   color: var(--color-success);
   margin-bottom: 8px;
 }
@@ -662,7 +774,7 @@ body::before {
 }
 
 .success-code-box {
-  background: var(--color-bg-card-2);
+  background: #fff;
   border: 1.5px solid var(--color-success);
   border-radius: var(--radius-md);
   padding: 14px 20px;
@@ -671,7 +783,7 @@ body::before {
 
 .success-code-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-text-dim);
@@ -688,7 +800,7 @@ body::before {
 
 .connecting-msg {
   font-size: 13px;
-  color: var(--color-primary);
+  color: var(--color-accent);
   animation: fade-pulse 1.5s ease-in-out infinite;
 }
 
@@ -725,8 +837,9 @@ body::before {
 }
 
 .error-title {
-  font-size: 20px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
   color: var(--color-error);
   margin-bottom: 8px;
 }
@@ -740,11 +853,11 @@ body::before {
 .btn-retry {
   padding: 12px 28px;
   background: transparent;
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-border-hover);
   border-radius: var(--radius-md);
   color: var(--color-text);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   font-family: var(--font-sans);
   cursor: pointer;
   transition: var(--transition);
@@ -810,14 +923,14 @@ body::before {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(80px);
-  background: var(--color-bg-card-2);
-  border: 1px solid var(--color-border);
+  background: #FFFFFF;
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 12px 20px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--color-text);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 10px 34px rgba(225, 29, 72, 0.16);
   z-index: 9999;
   opacity: 0;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -838,8 +951,24 @@ body::before {
     border-radius: var(--radius-lg);
   }
 
-  .forfait-price-value {
-    font-size: 18px;
+  .tab {
+    font-size: 10.5px;
+  }
+
+  .pay-price {
+    font-size: 16px;
+  }
+}
+
+/* ============================================================
+   Accessibilité : réduire les animations si demandé
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

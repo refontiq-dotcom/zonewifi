@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { sendPaymentAlert } from '@/lib/telegram';
 import { FORFAITS } from '@/lib/types';
+import { isValidIvorianPhone, normalizePhone } from '@/lib/phone';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,8 +18,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Champs manquants' }, { status: 400 });
     }
 
-    const phoneRegex = /^(\+?221)?(7[06-8])\d{7}$/;
-    if (!phoneRegex.test(telephone.replace(/\s/g, ''))) {
+    if (!isValidIvorianPhone(telephone)) {
       return NextResponse.json(
         { error: 'Numéro de téléphone invalide' },
         { status: 400 }
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const { data: existing } = await supabaseAdmin
       .from('transactions')
       .select('id, statut')
-      .eq('telephone', telephone)
+      .eq('telephone', normalizePhone(telephone))
       .eq('statut', 'En attente')
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const { data: transaction, error: insertError } = await supabaseAdmin
       .from('transactions')
       .insert({
-        telephone: telephone.replace(/\s/g, ''),
+        telephone: normalizePhone(telephone),
         profil,
         montant: forfait.prix,
       })

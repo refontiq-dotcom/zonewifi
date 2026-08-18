@@ -1,20 +1,28 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { FORFAITS, type ForfaitConfig } from '@/lib/types';
+import { isValidIvorianPhone, normalizePhone } from '@/lib/phone';
 
 // ============================================================
 // Types d'état
 // ============================================================
 type Screen = 'landing' | 'waiting' | 'success' | 'refused' | 'error';
-type Tab = 'connect' | 'buy';
+type Tab = 'buy' | 'connect' | 'codes';
 
 type VerifyState =
   | { status: 'idle' }
   | { status: 'checking' }
   | { status: 'ok'; message?: string }
   | { status: 'expired'; message: string }
+  | { status: 'error'; message: string };
+
+type LookupState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'found'; code: string; label?: string; montant?: number }
+  | { status: 'none' }
   | { status: 'error'; message: string };
 
 // ============================================================
@@ -91,15 +99,54 @@ function Toast({ message, visible }: { message: string; visible: boolean }) {
 }
 
 // ============================================================
+// Champ téléphone (Côte d'Ivoire +225)
+// ============================================================
+function PhoneField({
+  id,
+  value,
+  error,
+  onChange,
+  onBlur,
+}: {
+  id: string;
+  value: string;
+  error: string;
+  onChange: (val: string) => void;
+  onBlur?: () => void;
+}) {
+  return (
+    <div className="phone-input-wrapper">
+      <span className="phone-prefix">🇨🇮 +225</span>
+      <input
+        id={id}
+        type="tel"
+        className="phone-input"
+        placeholder="07 00 00 00 00"
+        value={value}
+        maxLength={16}
+        inputMode="tel"
+        autoComplete="tel"
+        aria-label="Numéro de téléphone"
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+        onChange={(e) => onChange(e.target.value.replace(/[^\d\s+]/g, ''))}
+        onBlur={onBlur}
+      />
+      {error && (
+        <p id={`${id}-error`} className="field-error">
+          ⚠️ {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // Page principale — Portail Captif
 // ============================================================
 export default function PortailCaptif() {
   const [screen, setScreen] = useState<Screen>('landing');
-  const [tab, setTab] = useState<Tab>('connect');
-
-  // --- Parcours "J'ai déjà un code" ---
-  const [code, setCode] = useState('');
-  const [verify, setVerify] = useState<VerifyState>({ status: 'idle' });
+  const [tab, setTab] = useState<Tab>('buy');
 
   // --- Parcours "Acheter un pass" ---
   const [phone, setPhone] = useState('');
@@ -108,6 +155,14 @@ export default function PortailCaptif() {
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [wifiCode, setWifiCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- Parcours "J'ai déjà un code" ---
+  const [code, setCode] = useState('');
+  const [verify, setVerify] = useState<VerifyState>({ status: 'idle' });
+
+  // --- Parcours "Mes codes" ---
+  const [codeLookup, setCodeLookup] = useState<LookupState>({ status: 'idle' });
+
   const [toast, setToast] = useState({ message: '', visible: false });
 
   // Récupère les paramètres MikroTik depuis l'URL (injectés par le routeur)
@@ -130,12 +185,18 @@ export default function PortailCaptif() {
     setTimeout(() => setToast((t) => ({ ...t, visible: false })), 3500);
   };
 
-  // --- Validation du numéro ---
+  // --- Validation du numéro ivoirien ---
   const validatePhone = (value: string): boolean => {
-    const clean = value.replace(/\s/g, '');
-    const ok = /^(\+?221)?(7[06-8])\d{7}$/.test(clean);
-    setPhoneError(ok ? '' : 'Format invalide. Ex : 77 123 45 67');
+    const ok = isValidIvorianPhone(value);
+    setPhoneError(ok ? '' : 'Format invalide. Ex : 07 00 00 00 00');
     return ok;
+  };
+
+  const handlePhoneChange = (val: string) => {
+    setPhone(val);
+    if (phoneError) validatePhone(val);
+    setSelectedForfait(null);
+    setCodeLookup({ status: 'idle' });
   };
 
   // --- Auto-connexion MikroTik (formulaire caché HTTP PAP) ---
@@ -150,7 +211,57 @@ export default function PortailCaptif() {
     }, 2500); // Laisse l'utilisateur voir le code 2,5 secondes
   };
 
-  // --- Parcours 1 : connexion avec un code existant ---
+  // --- Parcours 1 : bouton Payer d'un forfait (ouvre Wave) ---
+  const handleForfaitClick = (forfait: ForfaitConfig) => {
+    if (!validatePhone(phone)) {
+      showToast('⚠️ Entrez votre numéro avant de payer');
+      return;
+    }
+    setSelectedForfait(forfait);
+    // Redirige vers le lien de paiement Wave intégré (montant fixe)
+    window.open(forfait.waveUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // --- Parcours 1 : déclaration du paiement ---
+  const handlePaymentDeclared = async () => {
+    if (!selectedForfait) return;
+    if (!validatePhone(phone)) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telephone: normalizePhone(phone),
+          profil: selectedForfait.profil,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 409) {
+        // Demande déjà en cours — on reprend le suivi
+        setTransactionId(data.transactionId);
+        setScreen('waiting');
+        return;
+      }
+
+      if (!res.ok) {
+        showToast(`❌ ${data.error ?? 'Erreur lors de la soumission'}`);
+        return;
+      }
+
+      setTransactionId(data.transactionId);
+      setScreen('waiting');
+    } catch {
+      showToast('❌ Erreur réseau, réessayez');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // --- Parcours 2 : connexion avec un code existant ---
   const handleCodeConnect = async () => {
     const clean = code.replace(/\s+/g, '').toUpperCase();
     if (!clean) {
@@ -172,7 +283,7 @@ export default function PortailCaptif() {
 
       const data = await res.json();
 
-      if (res.status === 500 || (data && data.error && res.status >= 400)) {
+      if (data && data.error && res.status >= 400) {
         setVerify({
           status: 'error',
           message: data.error ?? 'Erreur lors de la vérification du code.',
@@ -199,54 +310,49 @@ export default function PortailCaptif() {
     }
   };
 
-  // --- Parcours 2 : clic sur un forfait (ouvre Wave + mémorise) ---
-  const handleForfaitClick = (forfait: ForfaitConfig) => {
-    if (!validatePhone(phone)) {
-      showToast('⚠️ Entrez votre numéro avant de choisir un forfait');
-      return;
-    }
-    setSelectedForfait(forfait);
-    // Ouvre Wave Business dans un nouvel onglet
-    window.open(forfait.waveUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  // --- Parcours 2 : déclaration du paiement ---
-  const handlePaymentDeclared = async () => {
-    if (!selectedForfait) return;
+  // --- Parcours 3 : retrouver son code après achat ---
+  const handleFindCode = async () => {
     if (!validatePhone(phone)) return;
 
-    setIsSubmitting(true);
+    setCodeLookup({ status: 'loading' });
     try {
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          telephone: phone.replace(/\s/g, ''),
-          profil: selectedForfait.profil,
-        }),
-      });
-
+      const res = await fetch(
+        `/api/codes/by-phone?telephone=${encodeURIComponent(normalizePhone(phone))}`
+      );
       const data = await res.json();
 
-      if (res.status === 409) {
-        // Demande déjà en cours — on reprend le suivi
-        setTransactionId(data.transactionId);
-        setScreen('waiting');
+      if (res.status === 404) {
+        setCodeLookup({ status: 'none' });
         return;
       }
-
       if (!res.ok) {
-        showToast(`❌ ${data.error ?? 'Erreur lors de la soumission'}`);
+        setCodeLookup({
+          status: 'error',
+          message: data.error ?? 'Erreur lors de la recherche.',
+        });
         return;
       }
 
-      setTransactionId(data.transactionId);
-      setScreen('waiting');
+      setCodeLookup({
+        status: 'found',
+        code: data.code,
+        label: data.label,
+        montant: data.montant,
+      });
     } catch {
-      showToast('❌ Erreur réseau, réessayez');
-    } finally {
-      setIsSubmitting(false);
+      setCodeLookup({
+        status: 'error',
+        message: 'Erreur réseau. Réessayez.',
+      });
     }
+  };
+
+  // --- Se connecter avec le code retrouvé ---
+  const connectWithFoundCode = () => {
+    if (codeLookup.status !== 'found') return;
+    setCode(codeLookup.code);
+    setVerify({ status: 'idle' });
+    setTab('connect');
   };
 
   // --- Callbacks du hook Realtime ---
@@ -282,6 +388,7 @@ export default function PortailCaptif() {
   const switchTab = (next: Tab) => {
     setTab(next);
     setVerify({ status: 'idle' });
+    setCodeLookup({ status: 'idle' });
   };
 
   return (
@@ -311,6 +418,15 @@ export default function PortailCaptif() {
               <div className="tabs" role="tablist" aria-label="Choix du parcours">
                 <button
                   role="tab"
+                  aria-selected={tab === 'buy'}
+                  className={`tab${tab === 'buy' ? ' active' : ''}`}
+                  onClick={() => switchTab('buy')}
+                >
+                  <span className="tab-icon">💳</span>
+                  Acheter un pass
+                </button>
+                <button
+                  role="tab"
                   aria-selected={tab === 'connect'}
                   className={`tab${tab === 'connect' ? ' active' : ''}`}
                   onClick={() => switchTab('connect')}
@@ -320,16 +436,82 @@ export default function PortailCaptif() {
                 </button>
                 <button
                   role="tab"
-                  aria-selected={tab === 'buy'}
-                  className={`tab${tab === 'buy' ? ' active' : ''}`}
-                  onClick={() => switchTab('buy')}
+                  aria-selected={tab === 'codes'}
+                  className={`tab${tab === 'codes' ? ' active' : ''}`}
+                  onClick={() => switchTab('codes')}
                 >
-                  <span className="tab-icon">💳</span>
-                  Acheter un pass
+                  <span className="tab-icon">📱</span>
+                  Mes codes
                 </button>
               </div>
 
-              {/* ---- Onglet : Connexion avec code ---- */}
+              {/* ---- Onglet : Acheter un pass ---- */}
+              {tab === 'buy' && (
+                <div className="tab-panel">
+                  <p className="section-label">Votre numéro Wave</p>
+                  <PhoneField
+                    id="phone-input"
+                    value={phone}
+                    error={phoneError}
+                    onChange={handlePhoneChange}
+                    onBlur={() => phone && validatePhone(phone)}
+                  />
+
+                  <p className="section-label">Choisissez votre pass</p>
+                  <div className="forfaits-grid" role="list">
+                    {FORFAITS.map((f) => (
+                      <button
+                        key={f.profil}
+                        id={`pay-${f.profil}`}
+                        role="listitem"
+                        className={`pay-btn${selectedForfait?.profil === f.profil ? ' selected' : ''}`}
+                        style={{ '--pay-accent': f.accent } as CSSProperties}
+                        disabled={!phone || !!phoneError}
+                        onClick={() => handleForfaitClick(f)}
+                      >
+                        <span className="pay-emoji">{f.emoji}</span>
+                        <span className="pay-info">
+                          <span className="pay-name">{f.label}</span>
+                          <span className="pay-duration">{f.duree}</span>
+                        </span>
+                        <span className="pay-price">
+                          {f.prix.toLocaleString('fr-FR')}{' '}
+                          <span className="pay-currency">FCFA</span>
+                        </span>
+                        <span className="pay-btn-cta">Payer</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Bouton "J'ai payé" — visible seulement après sélection */}
+                  {selectedForfait && (
+                    <div style={{ animation: 'pop-in 0.3s ease' }}>
+                      <p style={{
+                        textAlign: 'center',
+                        fontSize: 13,
+                        color: 'var(--color-text-muted)',
+                        marginBottom: 12,
+                        lineHeight: 1.6,
+                      }}>
+                        Après avoir payé <strong style={{ color: 'var(--color-text)' }}>
+                          {selectedForfait.prix.toLocaleString('fr-FR')} FCFA
+                        </strong> sur Wave, cliquez ci-dessous.
+                      </p>
+                      <button
+                        id="btn-payment-done"
+                        className="btn-paid visible"
+                        onClick={handlePaymentDeclared}
+                        disabled={isSubmitting}
+                        aria-busy={isSubmitting}
+                      >
+                        {isSubmitting ? 'Envoi en cours...' : '✅ J\'ai effectué le paiement'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ---- Onglet : J'ai déjà un code ---- */}
               {tab === 'connect' && (
                 <div className="tab-panel">
                   <p className="section-label">Votre code Wi-Fi</p>
@@ -403,89 +585,72 @@ export default function PortailCaptif() {
                 </div>
               )}
 
-              {/* ---- Onglet : Acheter un pass ---- */}
-              {tab === 'buy' && (
+              {/* ---- Onglet : Mes codes ---- */}
+              {tab === 'codes' && (
                 <div className="tab-panel">
-                  {/* Téléphone */}
-                  <p className="section-label">Votre numéro Wave</p>
-                  <div className="phone-input-wrapper">
-                    <span className="phone-prefix">🇸🇳 +221</span>
-                    <input
-                      id="phone-input"
-                      type="tel"
-                      className="phone-input"
-                      placeholder="77 000 00 00"
-                      value={phone}
-                      maxLength={12}
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      aria-label="Numéro de téléphone"
-                      aria-invalid={!!phoneError}
-                      aria-describedby={phoneError ? 'phone-error' : undefined}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^\d\s]/g, '');
-                        setPhone(val);
-                        if (phoneError) validatePhone(val);
-                        setSelectedForfait(null);
-                      }}
-                      onBlur={() => phone && validatePhone(phone)}
-                    />
-                    {phoneError && (
-                      <p id="phone-error" style={{ color: 'var(--color-error)', fontSize: 12, marginTop: 6, paddingLeft: 4 }}>
-                        ⚠️ {phoneError}
-                      </p>
-                    )}
-                  </div>
+                  <p className="section-label">Retrouver votre code</p>
+                  <PhoneField
+                    id="code-phone-input"
+                    value={phone}
+                    error={phoneError}
+                    onChange={handlePhoneChange}
+                    onBlur={() => phone && validatePhone(phone)}
+                  />
+                  <p className="tab-hint" style={{ marginTop: 0, marginBottom: 14 }}>
+                    Entrez le numéro utilisé lors de votre achat pour retrouver
+                    votre code Wi-Fi attribué après validation du paiement.
+                  </p>
 
-                  {/* Boutons de paiement */}
-                  <p className="section-label">Choisissez votre pass</p>
-                  <div className="forfaits-grid" role="list">
-                    {FORFAITS.map((f) => (
-                      <button
-                        key={f.profil}
-                        id={`pay-${f.profil}`}
-                        role="listitem"
-                        className={`pay-btn${selectedForfait?.profil === f.profil ? ' selected' : ''}`}
-                        disabled={!phone || !!phoneError}
-                        onClick={() => handleForfaitClick(f)}
-                      >
-                        <span className="pay-emoji">{f.emoji}</span>
-                        <span className="pay-info">
-                          <span className="pay-name">{f.label}</span>
-                          {f.popular && <span className="pay-tag-popular">⭐ Populaire</span>}
-                          <span className="pay-duration">{f.duree}</span>
-                        </span>
-                        <span className="pay-price">
-                          {f.prix.toLocaleString('fr-FR')} <span className="pay-currency">FCFA</span>
-                        </span>
-                        <span className="pay-action">Payer via Wave →</span>
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    id="btn-find-code"
+                    className="btn-lookup"
+                    onClick={handleFindCode}
+                    disabled={codeLookup.status === 'loading'}
+                    aria-busy={codeLookup.status === 'loading'}
+                  >
+                    {codeLookup.status === 'loading'
+                      ? 'Recherche en cours…'
+                      : '🔍 Voir mon code'}
+                  </button>
 
-                  {/* Bouton "J'ai payé" — visible seulement après sélection */}
-                  {selectedForfait && (
-                    <div style={{ animation: 'pop-in 0.3s ease' }}>
-                      <p style={{
-                        textAlign: 'center',
-                        fontSize: 13,
-                        color: 'var(--color-text-muted)',
-                        marginBottom: 12,
-                        lineHeight: 1.6,
-                      }}>
-                        Après avoir payé <strong style={{ color: 'var(--color-text)' }}>
-                          {selectedForfait.prix.toLocaleString('fr-FR')} FCFA
-                        </strong> sur Wave, cliquez ci-dessous.
-                      </p>
+                  {codeLookup.status === 'found' && (
+                    <div className="lookup-result is-found">
+                      <p className="lookup-title">Votre dernier code</p>
+                      <div className="lookup-code-box">
+                        <span className="lookup-code">{codeLookup.code}</span>
+                      </div>
+                      {codeLookup.label && (
+                        <p className="lookup-meta">
+                          {codeLookup.label}
+                          {codeLookup.montant
+                            ? ` · ${codeLookup.montant.toLocaleString('fr-FR')} FCFA`
+                            : ''}
+                        </p>
+                      )}
                       <button
-                        id="btn-payment-done"
-                        className="btn-paid visible"
-                        onClick={handlePaymentDeclared}
-                        disabled={isSubmitting}
-                        aria-busy={isSubmitting}
+                        className="btn-connect"
+                        onClick={connectWithFoundCode}
                       >
-                        {isSubmitting ? 'Envoi en cours...' : '✅ J\'ai effectué le paiement'}
+                        📶 Se connecter avec ce code
                       </button>
+                    </div>
+                  )}
+
+                  {codeLookup.status === 'none' && (
+                    <div className="lookup-result is-none">
+                      <p>
+                        Aucun code trouvé pour ce numéro. Vérifiez votre numéro,
+                        ou attendez que l&apos;admin confirme votre paiement.
+                      </p>
+                      <button className="btn-retry" onClick={() => switchTab('buy')}>
+                        Acheter un pass →
+                      </button>
+                    </div>
+                  )}
+
+                  {codeLookup.status === 'error' && (
+                    <div className="lookup-result is-error">
+                      <p>⚠️ {codeLookup.message}</p>
                     </div>
                   )}
                 </div>
@@ -500,7 +665,8 @@ export default function PortailCaptif() {
               <p className="status-title">Vérification en cours</p>
               <p className="status-desc">
                 Votre paiement est en cours de vérification par notre équipe.
-                Vous serez connecté automatiquement dès validation.
+                Votre code vous sera envoyé ici dès validation, et vous serez
+                connecté automatiquement.
                 <span className="status-dots">
                   <span /><span /><span />
                 </span>
