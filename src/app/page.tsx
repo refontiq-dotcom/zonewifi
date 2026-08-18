@@ -752,15 +752,16 @@ export default function PortailCaptif() {
           </div>
         </main>
 
-        {/* ---- Powered by ---- */}
-        <p style={{
-          marginTop: 28,
-          fontSize: 11,
-          color: 'var(--color-text-dim)',
-          letterSpacing: 0.5,
-        }}>
-          Propulsé par Wave · MikroTik · Supabase
-        </p>
+        {/* ---- Contact WhatsApp ---- */}
+        <a
+          href="https://wa.me/2250100372900"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="whats-contact"
+        >
+          <span className="whats-icon">💬</span>
+          Besoin d'aide ? Contactez le <span className="whats-number">0100372900</span>
+        </a>
       </div>
 
       {/* ============================================================
