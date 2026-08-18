@@ -5,9 +5,17 @@ import { supabaseBrowser } from '@/lib/supabase-browser';
 import { FORFAITS, type ForfaitConfig } from '@/lib/types';
 
 // ============================================================
-// Types d'état de l'écran
+// Types d'état
 // ============================================================
-type Screen = 'selection' | 'waiting' | 'success' | 'refused' | 'error';
+type Screen = 'landing' | 'waiting' | 'success' | 'refused' | 'error';
+type Tab = 'connect' | 'buy';
+
+type VerifyState =
+  | { status: 'idle' }
+  | { status: 'checking' }
+  | { status: 'ok'; message?: string }
+  | { status: 'expired'; message: string }
+  | { status: 'error'; message: string };
 
 // ============================================================
 // Hook Realtime Supabase + polling de fallback
@@ -72,44 +80,6 @@ function useTransactionStatus(
 }
 
 // ============================================================
-// Composant Carte Forfait
-// ============================================================
-function ForfaitCard({
-  forfait,
-  disabled,
-  onClick,
-}: {
-  forfait: ForfaitConfig;
-  disabled: boolean;
-  onClick: (f: ForfaitConfig) => void;
-}) {
-  return (
-    <div
-      role="button"
-      tabIndex={disabled ? -1 : 0}
-      id={`forfait-${forfait.profil}`}
-      className={`forfait-card${forfait.popular ? ' popular' : ''}${disabled ? ' disabled' : ''}`}
-      onClick={() => !disabled && onClick(forfait)}
-      onKeyDown={(e) => !disabled && e.key === 'Enter' && onClick(forfait)}
-      aria-label={`Sélectionner ${forfait.label} — ${forfait.prix} FCFA`}
-    >
-      {forfait.popular && <span className="badge-popular">⭐ Populaire</span>}
-      <div className="forfait-left">
-        <span className="forfait-emoji">{forfait.emoji}</span>
-        <div className="forfait-info">
-          <span className="forfait-name">{forfait.label}</span>
-          <span className="forfait-duration">{forfait.duree}</span>
-        </div>
-      </div>
-      <div className="forfait-price">
-        <span className="forfait-price-value">{forfait.prix.toLocaleString('fr-FR')}</span>
-        <span className="forfait-price-unit">FCFA</span>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
 // Composant Toast
 // ============================================================
 function Toast({ message, visible }: { message: string; visible: boolean }) {
@@ -124,7 +94,14 @@ function Toast({ message, visible }: { message: string; visible: boolean }) {
 // Page principale — Portail Captif
 // ============================================================
 export default function PortailCaptif() {
-  const [screen, setScreen] = useState<Screen>('selection');
+  const [screen, setScreen] = useState<Screen>('landing');
+  const [tab, setTab] = useState<Tab>('connect');
+
+  // --- Parcours "J'ai déjà un code" ---
+  const [code, setCode] = useState('');
+  const [verify, setVerify] = useState<VerifyState>({ status: 'idle' });
+
+  // --- Parcours "Acheter un pass" ---
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [selectedForfait, setSelectedForfait] = useState<ForfaitConfig | null>(null);
@@ -145,6 +122,8 @@ export default function PortailCaptif() {
     };
   };
 
+  const mkParams = typeof window !== 'undefined' ? getMikroTikParams() : {};
+
   // --- Toast helper ---
   const showToast = (message: string) => {
     setToast({ message, visible: true });
@@ -159,19 +138,79 @@ export default function PortailCaptif() {
     return ok;
   };
 
-  // --- Clic sur un forfait ---
+  // --- Auto-connexion MikroTik (formulaire caché HTTP PAP) ---
+  const scheduleMikrotikLogin = (codeToUse: string) => {
+    setTimeout(() => {
+      const form = document.getElementById('mikrotik-form') as HTMLFormElement | null;
+      if (form) {
+        (form.querySelector('[name="username"]') as HTMLInputElement).value = codeToUse;
+        (form.querySelector('[name="password"]') as HTMLInputElement).value = codeToUse;
+        form.submit();
+      }
+    }, 2500); // Laisse l'utilisateur voir le code 2,5 secondes
+  };
+
+  // --- Parcours 1 : connexion avec un code existant ---
+  const handleCodeConnect = async () => {
+    const clean = code.replace(/\s+/g, '').toUpperCase();
+    if (!clean) {
+      setVerify({ status: 'error', message: 'Veuillez saisir votre code Wi-Fi.' });
+      return;
+    }
+    if (clean.length < 6) {
+      setVerify({ status: 'error', message: 'Ce code semble trop court. Vérifiez-le.' });
+      return;
+    }
+
+    setVerify({ status: 'checking' });
+    try {
+      const res = await fetch('/api/codes/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: clean }),
+      });
+
+      const data = await res.json();
+
+      if (res.status === 500 || (data && data.error && res.status >= 400)) {
+        setVerify({
+          status: 'error',
+          message: data.error ?? 'Erreur lors de la vérification du code.',
+        });
+        return;
+      }
+
+      if (data.valid) {
+        setVerify({ status: 'ok', message: data.message });
+        setWifiCode(clean);
+        setScreen('success');
+        scheduleMikrotikLogin(clean);
+      } else {
+        setVerify({
+          status: 'expired',
+          message: data.message ?? 'Ce code n\'est pas utilisable.',
+        });
+      }
+    } catch {
+      setVerify({
+        status: 'error',
+        message: 'Erreur réseau. Vérifiez votre connexion et réessayez.',
+      });
+    }
+  };
+
+  // --- Parcours 2 : clic sur un forfait (ouvre Wave + mémorise) ---
   const handleForfaitClick = (forfait: ForfaitConfig) => {
     if (!validatePhone(phone)) {
       showToast('⚠️ Entrez votre numéro avant de choisir un forfait');
       return;
     }
     setSelectedForfait(forfait);
-
     // Ouvre Wave Business dans un nouvel onglet
     window.open(forfait.waveUrl, '_blank', 'noopener,noreferrer');
   };
 
-  // --- Déclaration du paiement ---
+  // --- Parcours 2 : déclaration du paiement ---
   const handlePaymentDeclared = async () => {
     if (!selectedForfait) return;
     if (!validatePhone(phone)) return;
@@ -215,16 +254,7 @@ export default function PortailCaptif() {
     (code: string) => {
       setWifiCode(code);
       setScreen('success');
-
-      // Auto-connexion MikroTik via soumission du formulaire caché
-      setTimeout(() => {
-        const form = document.getElementById('mikrotik-form') as HTMLFormElement | null;
-        if (form) {
-          (form.querySelector('[name="username"]') as HTMLInputElement).value = code;
-          (form.querySelector('[name="password"]') as HTMLInputElement).value = code;
-          form.submit();
-        }
-      }, 2500); // Laisse l'utilisateur voir le code 2,5 secondes
+      scheduleMikrotikLogin(code);
     },
     []
   );
@@ -240,8 +270,19 @@ export default function PortailCaptif() {
     handleRefused
   );
 
-  // --- Récupère les params MikroTik pour le formulaire caché ---
-  const mkParams = typeof window !== 'undefined' ? getMikroTikParams() : {};
+  // --- Retour au formulaire ---
+  const resetToLanding = () => {
+    setScreen('landing');
+    setSelectedForfait(null);
+    setTransactionId(null);
+    setVerify({ status: 'idle' });
+  };
+
+  // --- Changement d'onglet ---
+  const switchTab = (next: Tab) => {
+    setTab(next);
+    setVerify({ status: 'idle' });
+  };
 
   return (
     <>
@@ -263,76 +304,190 @@ export default function PortailCaptif() {
         {/* ---- CARTE PRINCIPALE ---- */}
         <main className="main-card" role="main">
 
-          {/* ==== ÉCRAN 1 : Sélection forfait ==== */}
-          {screen === 'selection' && (
+          {/* ==== ÉCRAN 1 : Choix du parcours ==== */}
+          {screen === 'landing' && (
             <>
-              {/* Téléphone */}
-              <p className="section-label">Votre numéro Wave</p>
-              <div className="phone-input-wrapper">
-                <span className="phone-prefix">🇸🇳 +221</span>
-                <input
-                  id="phone-input"
-                  type="tel"
-                  className="phone-input"
-                  placeholder="77 000 00 00"
-                  value={phone}
-                  maxLength={12}
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  aria-label="Numéro de téléphone"
-                  aria-invalid={!!phoneError}
-                  aria-describedby={phoneError ? 'phone-error' : undefined}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^\d\s]/g, '');
-                    setPhone(val);
-                    if (phoneError) validatePhone(val);
-                    setSelectedForfait(null);
-                  }}
-                  onBlur={() => phone && validatePhone(phone)}
-                />
-                {phoneError && (
-                  <p id="phone-error" style={{ color: 'var(--color-error)', fontSize: 12, marginTop: 6, paddingLeft: 4 }}>
-                    ⚠️ {phoneError}
-                  </p>
-                )}
+              {/* Onglets */}
+              <div className="tabs" role="tablist" aria-label="Choix du parcours">
+                <button
+                  role="tab"
+                  aria-selected={tab === 'connect'}
+                  className={`tab${tab === 'connect' ? ' active' : ''}`}
+                  onClick={() => switchTab('connect')}
+                >
+                  <span className="tab-icon">🔑</span>
+                  J&apos;ai déjà un code
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={tab === 'buy'}
+                  className={`tab${tab === 'buy' ? ' active' : ''}`}
+                  onClick={() => switchTab('buy')}
+                >
+                  <span className="tab-icon">💳</span>
+                  Acheter un pass
+                </button>
               </div>
 
-              {/* Forfaits */}
-              <p className="section-label">Choisissez votre forfait</p>
-              <div className="forfaits-grid" role="list">
-                {FORFAITS.map((f) => (
-                  <ForfaitCard
-                    key={f.profil}
-                    forfait={f}
-                    disabled={!phone || !!phoneError}
-                    onClick={handleForfaitClick}
-                  />
-                ))}
-              </div>
+              {/* ---- Onglet : Connexion avec code ---- */}
+              {tab === 'connect' && (
+                <div className="tab-panel">
+                  <p className="section-label">Votre code Wi-Fi</p>
+                  <div className="code-input-wrapper">
+                    <span className="code-input-icon">🔑</span>
+                    <input
+                      id="code-input"
+                      type="text"
+                      className="code-input"
+                      placeholder="WIFI-XXXX"
+                      value={code}
+                      maxLength={24}
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      spellCheck={false}
+                      aria-label="Code Wi-Fi"
+                      aria-invalid={verify.status === 'error' || verify.status === 'expired'}
+                      onChange={(e) => {
+                        setCode(e.target.value.toUpperCase());
+                        setVerify({ status: 'idle' });
+                      }}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCodeConnect()}
+                    />
+                  </div>
 
-              {/* Bouton "J'ai payé" — visible seulement après sélection */}
-              {selectedForfait && (
-                <div style={{ animation: 'pop-in 0.3s ease' }}>
-                  <p style={{
-                    textAlign: 'center',
-                    fontSize: 13,
-                    color: 'var(--color-text-muted)',
-                    marginBottom: 12,
-                    lineHeight: 1.6,
-                  }}>
-                    Après avoir payé <strong style={{ color: 'var(--color-text)' }}>
-                      {selectedForfait.prix.toLocaleString('fr-FR')} FCFA
-                    </strong> sur Wave, cliquez ci-dessous.
-                  </p>
                   <button
-                    id="btn-payment-done"
-                    className="btn-paid visible"
-                    onClick={handlePaymentDeclared}
-                    disabled={isSubmitting}
-                    aria-busy={isSubmitting}
+                    id="btn-code-connect"
+                    className="btn-connect"
+                    onClick={handleCodeConnect}
+                    disabled={verify.status === 'checking'}
+                    aria-busy={verify.status === 'checking'}
                   >
-                    {isSubmitting ? 'Envoi en cours...' : '✅ J\'ai effectué le paiement'}
+                    {verify.status === 'checking'
+                      ? 'Vérification en cours…'
+                      : '📶 Se connecter'}
                   </button>
+
+                  {/* Statut de vérification */}
+                  {verify.status === 'checking' && (
+                    <div className="verify-status is-info" role="status">
+                      <span className="verify-spinner" />
+                      Vérification de votre code…
+                    </div>
+                  )}
+
+                  {verify.status === 'ok' && (
+                    <div className="verify-status is-ok" role="status">
+                      ✅ Code valide — connexion en cours…
+                    </div>
+                  )}
+
+                  {verify.status === 'expired' && (
+                    <div className="verify-status is-error" role="alert">
+                      ❌ {verify.message}
+                      <button className="btn-retry" onClick={() => switchTab('buy')}>
+                        Acheter un pass →
+                      </button>
+                    </div>
+                  )}
+
+                  {verify.status === 'error' && (
+                    <div className="verify-status is-error" role="alert">
+                      ⚠️ {verify.message}
+                    </div>
+                  )}
+
+                  <p className="tab-hint">
+                    Déjà client ? Entrez le code reçu lors de votre achat
+                    pour vous reconnecter automatiquement.
+                  </p>
+                </div>
+              )}
+
+              {/* ---- Onglet : Acheter un pass ---- */}
+              {tab === 'buy' && (
+                <div className="tab-panel">
+                  {/* Téléphone */}
+                  <p className="section-label">Votre numéro Wave</p>
+                  <div className="phone-input-wrapper">
+                    <span className="phone-prefix">🇸🇳 +221</span>
+                    <input
+                      id="phone-input"
+                      type="tel"
+                      className="phone-input"
+                      placeholder="77 000 00 00"
+                      value={phone}
+                      maxLength={12}
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      aria-label="Numéro de téléphone"
+                      aria-invalid={!!phoneError}
+                      aria-describedby={phoneError ? 'phone-error' : undefined}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^\d\s]/g, '');
+                        setPhone(val);
+                        if (phoneError) validatePhone(val);
+                        setSelectedForfait(null);
+                      }}
+                      onBlur={() => phone && validatePhone(phone)}
+                    />
+                    {phoneError && (
+                      <p id="phone-error" style={{ color: 'var(--color-error)', fontSize: 12, marginTop: 6, paddingLeft: 4 }}>
+                        ⚠️ {phoneError}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Boutons de paiement */}
+                  <p className="section-label">Choisissez votre pass</p>
+                  <div className="forfaits-grid" role="list">
+                    {FORFAITS.map((f) => (
+                      <button
+                        key={f.profil}
+                        id={`pay-${f.profil}`}
+                        role="listitem"
+                        className={`pay-btn${selectedForfait?.profil === f.profil ? ' selected' : ''}`}
+                        disabled={!phone || !!phoneError}
+                        onClick={() => handleForfaitClick(f)}
+                      >
+                        <span className="pay-emoji">{f.emoji}</span>
+                        <span className="pay-info">
+                          <span className="pay-name">{f.label}</span>
+                          {f.popular && <span className="pay-tag-popular">⭐ Populaire</span>}
+                          <span className="pay-duration">{f.duree}</span>
+                        </span>
+                        <span className="pay-price">
+                          {f.prix.toLocaleString('fr-FR')} <span className="pay-currency">FCFA</span>
+                        </span>
+                        <span className="pay-action">Payer via Wave →</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Bouton "J'ai payé" — visible seulement après sélection */}
+                  {selectedForfait && (
+                    <div style={{ animation: 'pop-in 0.3s ease' }}>
+                      <p style={{
+                        textAlign: 'center',
+                        fontSize: 13,
+                        color: 'var(--color-text-muted)',
+                        marginBottom: 12,
+                        lineHeight: 1.6,
+                      }}>
+                        Après avoir payé <strong style={{ color: 'var(--color-text)' }}>
+                          {selectedForfait.prix.toLocaleString('fr-FR')} FCFA
+                        </strong> sur Wave, cliquez ci-dessous.
+                      </p>
+                      <button
+                        id="btn-payment-done"
+                        className="btn-paid visible"
+                        onClick={handlePaymentDeclared}
+                        disabled={isSubmitting}
+                        aria-busy={isSubmitting}
+                      >
+                        {isSubmitting ? 'Envoi en cours...' : '✅ J\'ai effectué le paiement'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -356,11 +511,7 @@ export default function PortailCaptif() {
               <button
                 style={{ marginTop: 20 }}
                 className="btn-retry"
-                onClick={() => {
-                  setScreen('selection');
-                  setSelectedForfait(null);
-                  setTransactionId(null);
-                }}
+                onClick={resetToLanding}
               >
                 ← Retour
               </button>
@@ -402,11 +553,7 @@ export default function PortailCaptif() {
               <button
                 id="btn-retry"
                 className="btn-retry"
-                onClick={() => {
-                  setScreen('selection');
-                  setSelectedForfait(null);
-                  setTransactionId(null);
-                }}
+                onClick={resetToLanding}
               >
                 ← Réessayer
               </button>
@@ -423,7 +570,7 @@ export default function PortailCaptif() {
               </p>
               <button
                 className="btn-retry"
-                onClick={() => setScreen('selection')}
+                onClick={resetToLanding}
               >
                 ← Retour
               </button>

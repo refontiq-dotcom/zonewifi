@@ -219,7 +219,182 @@ body::before {
 }
 
 /* ============================================================
-   Grille des forfaits
+   Onglets de parcours
+   ============================================================ */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: var(--color-bg-card-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  margin-bottom: 26px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab.active {
+  background: linear-gradient(135deg, var(--color-primary), #6366f1);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+}
+
+.tab-icon {
+  font-size: 16px;
+}
+
+.tab-panel {
+  animation: pop-in 0.25s ease;
+}
+
+/* ============================================================
+   Champ code Wi-Fi
+   ============================================================ */
+.code-input-wrapper {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.code-input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.code-input {
+  width: 100%;
+  padding: 14px 14px 14px 44px;
+  background: var(--color-bg-card-2);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 17px;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  outline: none;
+  transition: var(--transition);
+}
+
+.code-input::placeholder {
+  color: var(--color-text-dim);
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.code-input:focus {
+  border-color: var(--color-primary);
+  background: rgba(0, 212, 255, 0.04);
+  box-shadow: 0 0 0 3px var(--color-primary-dim);
+}
+
+/* --- Bouton "Se connecter" --- */
+.btn-connect {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, var(--color-success), #00c9a7);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #00331f;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 20px rgba(0, 228, 138, 0.25);
+  letter-spacing: 0.2px;
+}
+
+.btn-connect:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 228, 138, 0.35);
+}
+
+.btn-connect:active {
+  transform: translateY(0);
+}
+
+.btn-connect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Statut de vérification du code --- */
+.verify-status {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  text-align: center;
+}
+
+.verify-status.is-info {
+  background: var(--color-primary-dim);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  color: var(--color-primary);
+}
+
+.verify-status.is-ok {
+  background: var(--color-success-dim);
+  border: 1px solid var(--color-success);
+  color: var(--color-success);
+}
+
+.verify-status.is-error {
+  background: var(--color-error-dim);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+}
+
+.verify-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0, 212, 255, 0.25);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.tab-hint {
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--color-text-dim);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   Boutons de paiement (forfaits)
    ============================================================ */
 .forfaits-grid {
   display: grid;
@@ -228,118 +403,112 @@ body::before {
   margin-bottom: 24px;
 }
 
-.forfait-card {
+.pay-btn {
   position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'emoji info price'
+    'emoji action action';
+  align-items: center;
+  gap: 4px 12px;
+  text-align: left;
+  padding: 14px 16px;
   background: var(--color-bg-card-2);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 16px 18px;
+  color: inherit;
+  font-family: var(--font-sans);
   cursor: pointer;
   transition: var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  text-decoration: none;
-  color: inherit;
   overflow: hidden;
 }
 
-.forfait-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, transparent, var(--color-primary-dim));
-  opacity: 0;
-  transition: var(--transition);
-}
-
-.forfait-card:hover {
+.pay-btn:hover:not(:disabled) {
   border-color: var(--color-border-hover);
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
 }
 
-.forfait-card:hover::before {
-  opacity: 1;
+.pay-btn.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-dim);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
-.forfait-card.popular {
-  border-color: rgba(246, 201, 14, 0.3);
-}
-
-.forfait-card.popular:hover {
-  border-color: rgba(246, 201, 14, 0.6);
-  box-shadow: 0 8px 32px rgba(246, 201, 14, 0.1);
-}
-
-.forfait-card.disabled {
+.pay-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  pointer-events: none;
 }
 
-.badge-popular {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  background: linear-gradient(135deg, var(--color-gold), #f59e0b);
-  color: #0a0500;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  text-transform: uppercase;
+.pay-emoji {
+  grid-area: emoji;
+  font-size: 24px;
 }
 
-.forfait-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  position: relative;
-  z-index: 1;
-}
-
-.forfait-emoji {
-  font-size: 26px;
-  line-height: 1;
-}
-
-.forfait-info {
+.pay-info {
+  grid-area: info;
   display: flex;
   flex-direction: column;
 }
 
-.forfait-name {
+.pay-name {
   font-weight: 700;
   font-size: 15px;
   color: var(--color-text);
 }
 
-.forfait-duration {
-  font-size: 13px;
+.pay-tag-popular {
+  display: inline-block;
+  margin-top: 2px;
+  align-self: flex-start;
+  background: linear-gradient(135deg, var(--color-gold), #f59e0b);
+  color: #0a0500;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.pay-duration {
+  font-size: 12px;
   color: var(--color-text-muted);
   margin-top: 1px;
 }
 
-.forfait-price {
-  position: relative;
-  z-index: 1;
+.pay-price {
+  grid-area: price;
   text-align: right;
-}
-
-.forfait-price-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--color-primary);
   letter-spacing: -0.5px;
 }
 
-.forfait-price-unit {
-  font-size: 11px;
+.pay-currency {
+  font-size: 10px;
   color: var(--color-text-muted);
+  font-weight: 600;
   display: block;
+  text-align: right;
+}
+
+.pay-action {
+  grid-area: action;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-dim);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: var(--transition);
+}
+
+.pay-btn:hover:not(:disabled) .pay-action,
+.pay-btn.selected .pay-action {
+  color: var(--color-primary);
 }
 
 /* ============================================================
