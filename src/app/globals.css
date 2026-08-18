@@ -943,20 +943,295 @@ body::before {
 }
 
 /* ============================================================
-   Responsive
+   Responsive — Mode compact mobile
    ============================================================ */
 @media (max-width: 480px) {
+  /* --- Layout global compact --- */
+  .page-wrapper {
+    padding: 10px 10px 24px;
+  }
+
+  /* --- Header réduit --- */
+  .header {
+    margin-bottom: 14px;
+    padding-top: 4px;
+  }
+
+  .header-logo {
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .header-logo-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.30);
+  }
+
+  .header-logo-text {
+    font-size: 21px;
+  }
+
+  .header-subtitle {
+    font-size: 11px;
+  }
+
+  /* --- Carte principale --- */
   .main-card {
-    padding: 24px 18px;
+    padding: 16px 12px 14px;
     border-radius: var(--radius-lg);
   }
 
+  /* --- Onglets compacts --- */
+  .tabs {
+    gap: 3px;
+    padding: 3px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+
   .tab {
-    font-size: 10.5px;
+    gap: 2px;
+    padding: 6px 3px;
+    border-radius: 8px;
+    font-size: 9px;
+  }
+
+  .tab-icon {
+    font-size: 14px;
+  }
+
+  /* --- Champs de saisie compacts --- */
+  .section-label {
+    font-size: 9.5px;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+
+  .phone-input-wrapper {
+    margin-bottom: 12px;
+  }
+
+  .phone-prefix {
+    left: 10px;
+    font-size: 13px;
+  }
+
+  .phone-prefix::after {
+    height: 14px;
+  }
+
+  .phone-input {
+    padding: 10px 10px 10px 64px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  .code-input-wrapper {
+    margin-bottom: 10px;
+  }
+
+  .code-input-icon {
+    left: 10px;
+    font-size: 14px;
+  }
+
+  .code-input {
+    padding: 10px 10px 10px 36px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  .field-error {
+    font-size: 10px;
+    margin-top: 3px;
+  }
+
+  /* --- Forfaits : grille 2 colonnes pour éviter le scroll --- */
+  .forfaits-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .pay-btn {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'emoji'
+      'info'
+      'price'
+      'cta';
+    text-align: center;
+    gap: 2px;
+    padding: 8px 6px;
+    border-radius: 10px;
+  }
+
+  .pay-btn-cta {
+    padding: 7px 0;
+    font-size: 11px;
+    border-radius: 8px;
+  }
+
+  .pay-emoji {
+    font-size: 20px;
+  }
+
+  .pay-name {
+    font-size: 12px;
+  }
+
+  .pay-duration {
+    font-size: 9.5px;
   }
 
   .pay-price {
+    font-size: 14px;
+  }
+
+  .pay-currency {
+    font-size: 9px;
+  }
+
+  /* --- Boutons d'action compacts --- */
+  .btn-paid {
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .btn-connect {
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .btn-lookup {
+    padding: 12px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .btn-retry {
+    padding: 9px 20px;
+    font-size: 13px;
+  }
+
+  /* --- Textes d'aide et infos --- */
+  .tab-hint {
+    margin-top: 10px;
+    font-size: 10.5px;
+  }
+
+  .verify-status {
+    margin-top: 10px;
+    padding: 9px 10px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .lookup-result {
+    margin-top: 10px;
+    padding: 12px;
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .lookup-code {
     font-size: 16px;
+    letter-spacing: 2px;
+  }
+
+  .lookup-code-box {
+    padding: 8px 14px;
+  }
+
+  /* --- Panels de statut compacts --- */
+  .status-panel {
+    padding: 16px 12px;
+  }
+
+  .spinner {
+    width: 38px;
+    height: 38px;
+    border-width: 3px;
+    margin-bottom: 14px;
+  }
+
+  .status-title {
+    font-size: 16px;
+  }
+
+  .status-desc {
+    font-size: 12px;
+  }
+
+  .success-panel {
+    padding: 14px 12px;
+  }
+
+  .success-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 26px;
+    margin-bottom: 14px;
+  }
+
+  .success-title {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+
+  .success-desc {
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+
+  .success-code-box {
+    padding: 10px 14px;
+    margin-bottom: 14px;
+  }
+
+  .success-code-value {
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .error-panel {
+    padding: 14px 12px;
+  }
+
+  .error-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 26px;
+    margin-bottom: 14px;
+  }
+
+  .error-title {
+    font-size: 18px;
+  }
+
+  .error-desc {
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+
+  /* --- Footer compact --- */
+  .footer-info {
+    margin-top: 12px;
+    font-size: 10.5px;
+  }
+
+  /* --- Toast repositionné --- */
+  .toast {
+    bottom: 16px;
+    padding: 10px 14px;
+    font-size: 12px;
+    white-space: normal;
+    max-width: 92vw;
   }
 }
 
